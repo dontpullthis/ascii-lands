@@ -1,8 +1,14 @@
 pub mod ui;
 
 use std::collections::BTreeMap;
+use std::time::Duration;
+use std::process::exit;
 
 use ui::scenes::Scene;
+
+use crossterm::{
+    event::{poll, read, Event, KeyCode, KeyModifiers},
+};
 
 pub struct Engine {
     current_scene: Option<(usize, Box<dyn Scene>)>,
@@ -33,11 +39,38 @@ impl Engine {
     }
 
     pub fn run(&mut self) {
-        let (_, s) = match &self.current_scene {
-            None => return,
+        let (_, s) = match self.current_scene.as_mut() {
+            None => return, // TODO: handle an error
             Some((i, s)) => (i, s),
         };
 
-        s.render();
+        loop {
+            match poll(Duration::from_millis(100)) {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+
+            s.render();
+
+            match read() {
+                Ok(e) => {
+                    event_handler(&e);
+                    s.event_handler(&e);
+                },
+                Err(_) => continue,
+            }
+        }
+    }
+}
+
+/// A global event handler
+fn event_handler(event: &Event) {
+    match event {
+        Event::Key(e) => {
+            if e.modifiers == KeyModifiers::CONTROL && e.code == KeyCode::Char('c') {
+                exit(0);
+            }
+        },
+        _ => {},
     }
 }
