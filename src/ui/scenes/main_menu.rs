@@ -14,6 +14,7 @@ const LABEL_NEW_GAME: &str  = "  New Game  ";
 const LABEL_LOAD_GAME: &str = "  Load Game ";
 const LABEL_QUIT: &str      = "    Quit    ";
 
+/// Main menu. Displays in application start
 pub struct MainMenuScene {
     active_item: u8,
 }
@@ -31,8 +32,6 @@ impl Scene for MainMenuScene {
         let (w, h) = size().unwrap();
         let h_start = ((h - 4) / 2) as u16;
 
-        // let bg_color = if 0 == self.active_item { Color::Blue } else { Color::Black };
-        // let bg_colors = (0..=2).collect().iter().map(|i| if i == self.active_item { Color::Blue } else { Color::Black });
         let bg_colors: Vec<u8> = (0..=2).collect();
         let bg_colors: Vec<Color> = bg_colors.iter()
             .map(|i| if *i == self.active_item { Color::Blue } else { Color::Black })
@@ -66,8 +65,10 @@ impl Scene for MainMenuScene {
                 } else if e.code == KeyCode::Down && self.active_item < 2 {
                     self.active_item += 1;
                 } else if e.code == KeyCode::Enter {
-                    if self.active_item == 2 {
-                        exit(0);
+                    match self.active_item {
+                        0 => {},
+                        2 => exit(0),
+                        _ => {},
                     }
                 }
             },
