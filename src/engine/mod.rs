@@ -10,15 +10,27 @@ use crossterm::{
     event::{poll, read, Event, KeyCode, KeyModifiers},
 };
 
+struct GameState {
+    scene: Option<(usize, Box<dyn Scene>)>,
+}
+
+impl GameState {
+    pub fn new() -> GameState {
+        GameState {
+            scene: None,
+        }
+    }
+}
+
 pub struct Engine {
-    current_scene: Option<(usize, Box<dyn Scene>)>,
+    state: GameState,
     scenes: BTreeMap<usize, Box<dyn Scene>>,
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
-            current_scene: None,
+            state: GameState::new(),
             scenes: BTreeMap::new(),
         }
     }
@@ -28,18 +40,18 @@ impl Engine {
     }
 
     pub fn set_current_scene(&mut self, id: usize) {
-        match self.current_scene.take() {
+        match self.state.scene.take() {
             None => {},
             Some((i, s)) => self.add_scene(i, s),
         }
         match self.scenes.remove(&id) {
             None => return,
-            Some(s) => self.current_scene = Some((id, s)),
+            Some(s) => self.state.scene = Some((id, s)),
         }
     }
 
     pub fn run(&mut self) {
-        let (_, s) = match self.current_scene.as_mut() {
+        let (_, s) = match self.state.scene.as_mut() {
             None => return, // TODO: handle an error
             Some((i, s)) => (i, s),
         };
