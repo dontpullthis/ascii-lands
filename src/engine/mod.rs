@@ -1,76 +1,101 @@
 pub mod ui;
 
 use std::collections::BTreeMap;
+use std::thread;
 use std::time::Duration;
 use std::process::exit;
+use std::sync::{Arc, Mutex};
 
 use ui::scenes::Scene;
 
 use crossterm::{
-    event::{poll, read, Event, KeyCode, KeyModifiers},
+    event::{read, Event, KeyCode, KeyModifiers},
 };
 
 struct GameState {
-    scene: Option<(usize, Box<dyn Scene>)>,
+    scene: Arc<Mutex<dyn Scene>>
+}
+
+/// A placeholder scene
+struct DummyScene {
+}
+
+impl Scene for DummyScene {
+    fn render(&self) {
+
+    }
+
+    fn event_handler(&mut self, _event: &Event) {
+
+    }
 }
 
 impl GameState {
     pub fn new() -> GameState {
         GameState {
-            scene: None,
+            scene: Arc::new(Mutex::new(DummyScene{})),
         }
     }
 }
 
 pub struct Engine {
-    state: GameState,
-    scenes: BTreeMap<usize, Box<dyn Scene>>,
+    state: Arc<Mutex<GameState>>,
+    scenes: BTreeMap<usize, Arc<Mutex<dyn Scene>>>,
+}
+
+fn thread_render(state: Arc<Mutex<GameState>>) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        loop {
+            state.lock().unwrap().scene.lock().unwrap().render();
+            thread::sleep(Duration::from_millis(100));
+        }
+    })
+}
+ 
+fn thread_event_handler(state: Arc<Mutex<GameState>>) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        loop {
+            match read() {
+                Ok(e) => {
+                    event_handler(&e);
+                    state.lock().unwrap().scene.lock().unwrap().event_handler(&e);
+                },
+                Err(_) => continue,
+            }
+        }
+    })
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
-            state: GameState::new(),
+            state: Arc::new(Mutex::new(GameState::new())),
             scenes: BTreeMap::new(),
         }
     }
 
-    pub fn add_scene(&mut self, id: usize, scene: Box<dyn Scene>) {
+    pub fn add_scene(&mut self, id: usize, scene: Arc<Mutex<dyn Scene>>) {
         self.scenes.insert(id, scene);
     }
 
     pub fn set_current_scene(&mut self, id: usize) {
-        match self.state.scene.take() {
-            None => {},
-            Some((i, s)) => self.add_scene(i, s),
-        }
-        match self.scenes.remove(&id) {
+        let found_scene = match self.scenes.get(&id) {
             None => return,
-            Some(s) => self.state.scene = Some((id, s)),
-        }
+            Some(s) => s,
+        };
+
+        self.state.lock().unwrap().scene = found_scene.clone();
     }
 
     pub fn run(&mut self) {
-        let (_, s) = match self.state.scene.as_mut() {
-            None => return, // TODO: handle an error
-            Some((i, s)) => (i, s),
+        let t1 = thread_render(self.state.clone());
+        let t2 = thread_event_handler(self.state.clone());
+
+        match t1.join() {
+            _ => {},
         };
-
-        loop {
-            match poll(Duration::from_millis(100)) {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
-
-            s.render();
-
-            match read() {
-                Ok(e) => {
-                    event_handler(&e);
-                    s.event_handler(&e);
-                },
-                Err(_) => continue,
-            }
+        match t2.join() {
+            _ => {},
         }
     }
 }

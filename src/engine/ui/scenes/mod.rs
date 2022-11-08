@@ -1,7 +1,7 @@
 
 use crossterm::event::Event;
 
-pub trait Scene {
+pub trait Scene: Send + Sync {
     fn render(&self);
     fn event_handler(&mut self, event: &Event);
 }
