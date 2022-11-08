@@ -1,3 +1,4 @@
+pub mod game_state;
 pub mod ui;
 
 use std::collections::BTreeMap;
@@ -8,35 +9,11 @@ use std::sync::{Arc, Mutex};
 
 use ui::scenes::Scene;
 
+use crate::engine::game_state::GameState;
+
 use crossterm::{
     event::{read, Event, KeyCode, KeyModifiers},
 };
-
-struct GameState {
-    scene: Arc<Mutex<dyn Scene>>
-}
-
-/// A placeholder scene
-struct DummyScene {
-}
-
-impl Scene for DummyScene {
-    fn render(&self) {
-
-    }
-
-    fn event_handler(&mut self, _event: &Event) {
-
-    }
-}
-
-impl GameState {
-    pub fn new() -> GameState {
-        GameState {
-            scene: Arc::new(Mutex::new(DummyScene{})),
-        }
-    }
-}
 
 pub struct Engine {
     state: Arc<Mutex<GameState>>,
@@ -67,9 +44,9 @@ fn thread_event_handler(state: Arc<Mutex<GameState>>) -> thread::JoinHandle<()> 
 }
 
 impl Engine {
-    pub fn new() -> Engine {
+    pub fn new(game_state: GameState) -> Engine {
         Engine {
-            state: Arc::new(Mutex::new(GameState::new())),
+            state: Arc::new(Mutex::new(game_state)),
             scenes: BTreeMap::new(),
         }
     }
