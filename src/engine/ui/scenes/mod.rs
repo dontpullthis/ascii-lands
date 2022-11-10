@@ -1,4 +1,3 @@
-
 use crossterm::event::Event;
 
 pub trait Scene: Send + Sync {

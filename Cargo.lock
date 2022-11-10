@@ -7,6 +7,7 @@ name = "ascii-lands"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "lazy_static",
 ]
 
 [[package]]
@@ -51,6 +52,12 @@ checksum = "2ae1b35a484aa10e07fe0638d02301c5ad24de82d310ccbd2f3693da5f09bf1c"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"

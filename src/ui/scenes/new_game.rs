@@ -22,7 +22,7 @@ impl NewGameScene {
 
 impl Scene for NewGameScene {
     fn render(&self) {
-
+        println!("TEST");
         execute!(
             stdout(),
             SetColors(Colors::new(Color::Green, Color::Black)),
