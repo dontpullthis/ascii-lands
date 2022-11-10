@@ -11,21 +11,23 @@ use crate::ui::scenes::defs;
 use crossterm::Result;
 use crossterm::{
     cursor::Hide,
-    event::DisableMouseCapture,
     execute,
     terminal::enable_raw_mode,
+    terminal::disable_raw_mode,
 };
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
-    execute!(stdout(), DisableMouseCapture, Hide)?; // disable mouse capture and hide cursor
+    execute!(stdout(),  Hide)?;
 
     let mut engine = Engine::new();
     engine.add_scene(defs::SCENE_MAIN_MENU, Box::from(MainMenuScene::new()));
     engine.add_scene(defs::SCENE_NEW_GAME, Box::from(NewGameScene::new()));
     engine.set_current_scene(defs::SCENE_MAIN_MENU);
-
     engine.run();
+
+    disable_raw_mode()?;
+    execute!(stdout(),  Hide)?;
 
     Ok(())
 }
