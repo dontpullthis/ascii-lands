@@ -1,5 +1,4 @@
 use std::io::stdout;
-use std::process::exit;
 
 use crossterm::execute;
 use crossterm::style::{Color, Colors, Print, SetColors};
@@ -8,16 +7,16 @@ use crossterm::cursor::MoveTo;
 use crossterm::event::KeyCode;
 use crossterm::terminal::{Clear, ClearType, size};
 
+use crate::engine::actions::Action;
 use crate::engine::ui::scenes::Scene;
 use crate::ui::scenes::defs::SCENE_NEW_GAME;
 
-use crate::globals;
 
 const LABEL_NEW_GAME: &str  = "  New Game  ";
 const LABEL_LOAD_GAME: &str = "  Load Game ";
 const LABEL_QUIT: &str      = "    Quit    ";
 
-/// Main menu. Displays in application start
+/// Main menu. Displays in application starfn event_handler
 pub struct MainMenuScene {
     active_item: u8,
 }
@@ -59,29 +58,27 @@ impl Scene for MainMenuScene {
         ).unwrap();
     }
 
-    fn event_handler(&mut self, event: &Event) {
+    fn event_handler(&mut self, event: &Event) -> Action {
         match event {
             Event::Key(e) => {
 
                 if e.code == KeyCode::Up && self.active_item > 0 {
                     self.active_item -= 1;
+                    return Action::Render;
                 } else if e.code == KeyCode::Down && self.active_item < 2 {
                     self.active_item += 1;
+                    return Action::Render;
                 } else if e.code == KeyCode::Enter {
                     match self.active_item {
-                        0 => {
-                            println!("Main menu :: BEFORE engine lock");
-                            let mut engine = globals::ENGINE.lock().unwrap();
-                            println!("Main menu :: AFTER engine lock");
-                            engine.set_current_scene(SCENE_NEW_GAME);
-                            println!("Main menu :: AFTER set current scene");
-                        },
-                        2 => exit(0),
+                        0 => return Action::SetScene(SCENE_NEW_GAME),
+                        2 => return Action::Quit,
                         _ => {},
                     }
                 }
             },
             _ => {},
-        }
+        };
+
+        Action::None
     }
 }

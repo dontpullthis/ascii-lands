@@ -1,14 +1,15 @@
+pub mod actions;
 pub mod game_state;
 pub mod ui;
 
 use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
-use std::process::exit;
 use std::sync::{Arc, Mutex};
 
 use ui::scenes::Scene;
 
+use crate::engine::actions::Action;
 use crate::engine::game_state::GameState;
 
 use crossterm::{
@@ -16,57 +17,15 @@ use crossterm::{
 };
 
 pub struct Engine {
+    is_running: bool,
     state: Arc<Mutex<GameState>>,
     scenes: BTreeMap<usize, Arc<Mutex<dyn Scene>>>,
-}
-
-fn thread_render(state: Arc<Mutex<GameState>>) -> thread::JoinHandle<()> {
-    thread::spawn(move || {
-        loop {
-            {
-                println!("thread_render :: Acquired BEFORE state lock");
-                let mut state_mutex = state.lock().unwrap();
-                println!("thread_render :: Acquired AFTRER state lock");
-                let mut scene_mutex = state_mutex.scene.lock().unwrap();
-                scene_mutex.render();
-                println!("thread_render :: Released state lock");
-            }
-            thread::sleep(Duration::from_millis(100));
-        }
-    })
-}
- 
-fn thread_event_handler(state: Arc<Mutex<GameState>>) -> thread::JoinHandle<()> {
-    thread::spawn(move || {
-        loop {
-            match poll(Duration::from_millis(100)) {
-                Ok(_) => {},
-                Err(_) => continue,
-            };
-
-            match read() {
-                Ok(e) => {
-                    event_handler(&e);
-                    {
-                        println!("thread_event :: Acquired BEFORE state lock");
-                        let mut state_mutex = state.lock().unwrap();
-                        println!("thread_event :: Acquired AFTER state lock / BEFORE scene lock");
-                        let mut scene_mutex = state_mutex.scene.lock().unwrap();
-                        println!("thread_event :: Acquired AFTER scene lock");
-                        scene_mutex.event_handler(&e);
-                        println!("thread_event :: Released state lock");
-                    }
-                },
-                Err(_) => continue,
-            };
-            thread::sleep(Duration::from_millis(100));
-        }
-    })
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
+            is_running: true,
             state: Arc::new(Mutex::new(GameState::new())),
             scenes: BTreeMap::new(),
         }
@@ -77,32 +36,60 @@ impl Engine {
     }
 
     pub fn set_current_scene(&mut self, id: usize) {
-        let found_scene = match self.scenes.get(&id) {
-            None => return,
-            Some(s) => s,
-        };
-
-        println!("thread_set_scene :: Acquired BEFORE state lock");
-        let mut state = self.state.lock().unwrap();
-        println!("thread_set_scene :: Acquired AFTER state lock");
-        state.scene = found_scene.clone();
-        println!("thread_set_scene :: Released state lock");
+        {
+            let found_scene = match self.scenes.get(&id) {
+                None => return,
+                Some(s) => s,
+            };
+    
+            let mut state = self.state.lock().unwrap();
+            state.scene = found_scene.clone();
+        }
+        self.handle_action(Action::Render);
     }
 
     pub fn run(&mut self) {
-        thread_render(self.state.clone());
-        thread_event_handler(self.state.clone());
+        self.handle_action(Action::Render);
+        while self.is_running {
+            match poll(Duration::from_millis(100)) {
+                Ok(_) => {},
+                Err(_) => continue,
+            };
+
+            match read() {
+                Ok(e) => {
+                    self.handle_action(event_handler(&e));
+                    let action = self.state.lock().unwrap().scene.lock().unwrap().event_handler(&e);
+                    self.handle_action(action);
+                },
+                Err(_) => continue,
+            };
+            thread::sleep(Duration::from_millis(100));
+        }
+    }
+
+    fn handle_action(&mut self, action: Action) {
+        match action {
+            Action::None => {},
+            Action::Render => self.state.lock().unwrap().scene.lock().unwrap().render(),
+            Action::SetScene(id) => {
+                self.set_current_scene(id);
+            },
+            Action::Quit => self.is_running = false,
+        }
     }
 }
 
 /// A global event handler
-fn event_handler(event: &Event) {
+fn event_handler(event: &Event) -> Action {
     match event {
         Event::Key(e) => {
             if e.modifiers == KeyModifiers::CONTROL && e.code == KeyCode::Char('c') {
-                exit(0);
+                return Action::Quit
             }
         },
         _ => {},
     }
+
+    Action::None
 }

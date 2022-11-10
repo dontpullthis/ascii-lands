@@ -5,6 +5,7 @@ use crossterm::style::{Color, Colors, SetColors};
 use crossterm::event::Event;
 use crossterm::terminal::{Clear, ClearType};
 
+use crate::engine::actions::Action;
 use crate::engine::ui::scenes::Scene;
 
 /// New game screen
@@ -22,7 +23,6 @@ impl NewGameScene {
 
 impl Scene for NewGameScene {
     fn render(&self) {
-        println!("TEST");
         execute!(
             stdout(),
             SetColors(Colors::new(Color::Green, Color::Black)),
@@ -30,9 +30,11 @@ impl Scene for NewGameScene {
         ).unwrap();
     }
 
-    fn event_handler(&mut self, event: &Event) {
+    fn event_handler(&mut self, event: &Event) -> Action {
         match event {
             _ => {},
         }
+
+        Action::None
     }
 }
