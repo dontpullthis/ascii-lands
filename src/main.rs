@@ -13,14 +13,14 @@ use crate::ui::scenes::defs;
 use crossterm::Result;
 use crossterm::{
     cursor::Hide,
-    event::DisableMouseCapture,
     execute,
     terminal::enable_raw_mode,
+    terminal::disable_raw_mode,
 };
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
-    execute!(stdout(), DisableMouseCapture, Hide)?; // disable mouse capture and hide cursor
+    execute!(stdout(),  Hide)?;
 
     let scene_main_menu = Arc::new(Mutex::new(MainMenuScene::new()));
     let game_state = GameState::new(scene_main_menu.clone());
@@ -28,8 +28,10 @@ fn main() -> Result<()> {
     engine.add_scene(defs::SCENE_MAIN_MENU, scene_main_menu);
     engine.add_scene(defs::SCENE_NEW_GAME, Arc::new(Mutex::new(NewGameScene::new())));
     engine.set_current_scene(defs::SCENE_MAIN_MENU);
-
     engine.run();
+
+    disable_raw_mode()?;
+    execute!(stdout(),  Hide)?;
 
     Ok(())
 }
