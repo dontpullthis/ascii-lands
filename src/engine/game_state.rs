@@ -7,7 +7,7 @@ use crate::engine::ui::scenes::Scene;
 
 /// Stores the game state and shares it across threads
 pub struct GameState {
-    pub scene: Arc<Mutex<dyn Scene>>
+    pub scene: Box<dyn Scene>
 }
 
 /// A placeholder scene to init the engine
@@ -32,7 +32,7 @@ impl Scene for DummyScene {
 impl GameState {
     pub fn new() -> GameState {
         GameState {
-            scene: Arc::new(Mutex::new(DummyScene{}))
+            scene: Box::from(DummyScene{})
         }
     }
 }

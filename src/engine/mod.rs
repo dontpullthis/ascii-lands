@@ -18,33 +18,32 @@ use crossterm::{
 
 pub struct Engine {
     is_running: bool,
-    state: Arc<Mutex<GameState>>,
-    scenes: BTreeMap<usize, Arc<Mutex<dyn Scene>>>,
+    state: GameState,
+    scenes: BTreeMap<usize, Box<dyn Scene>>,
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
             is_running: true,
-            state: Arc::new(Mutex::new(GameState::new())),
+            state: GameState::new(),
             scenes: BTreeMap::new(),
         }
     }
 
-    pub fn add_scene(&mut self, id: usize, scene: Arc<Mutex<dyn Scene>>) {
+    pub fn add_scene(&mut self, id: usize, scene: Box<dyn Scene>) {
         self.scenes.insert(id, scene);
     }
 
     pub fn set_current_scene(&mut self, id: usize) {
         {
-            let found_scene = match self.scenes.get(&id) {
+            let found_scene = match self.scenes.remove(&id) {
                 None => return,
                 Some(s) => s,
             };
     
-            let mut state = self.state.lock().unwrap();
-            state.scene = found_scene.clone();
-            state.scene.lock().unwrap().on_show();
+            self.state.scene = found_scene;
+            self.state.scene.on_show();
         }
         self.handle_action(Action::Render);
     }
@@ -66,7 +65,7 @@ impl Engine {
         match read() {
             Ok(e) => {
                 self.handle_action(event_handler(&e));
-                let action = self.state.lock().unwrap().scene.lock().unwrap().event_handler(&e);
+                let action = self.state.scene.event_handler(&e);
                 self.handle_action(action);
             },
             Err(_) => {},
@@ -76,7 +75,7 @@ impl Engine {
     fn handle_action(&mut self, action: Action) {
         match action {
             Action::None => {},
-            Action::Render => self.state.lock().unwrap().scene.lock().unwrap().render(),
+            Action::Render => self.state.scene.render(),
             Action::SetScene(id) => {
                 self.set_current_scene(id);
             },
