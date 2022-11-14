@@ -14,8 +14,7 @@ use crossterm::Result;
 use crossterm::{
     cursor::Hide,
     execute,
-    terminal::enable_raw_mode,
-    terminal::disable_raw_mode,
+    terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode}
 };
 
 fn main() -> Result<()> {
@@ -29,7 +28,7 @@ fn main() -> Result<()> {
     engine.run();
 
     disable_raw_mode()?;
-    execute!(stdout(),  Hide)?;
+    execute!(stdout(), Clear(ClearType::All))?;
 
     Ok(())
 }

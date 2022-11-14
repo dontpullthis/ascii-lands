@@ -51,21 +51,25 @@ impl Engine {
     pub fn run(&mut self) {
         self.handle_action(Action::Render);
         while self.is_running {
-            match poll(Duration::from_millis(100)) {
-                Ok(_) => {},
-                Err(_) => continue,
-            };
-
-            match read() {
-                Ok(e) => {
-                    self.handle_action(event_handler(&e));
-                    let action = self.state.lock().unwrap().scene.lock().unwrap().event_handler(&e);
-                    self.handle_action(action);
-                },
-                Err(_) => continue,
-            };
+            self.handle_event();
             thread::sleep(Duration::from_millis(100));
         }
+    }
+
+    fn handle_event(&mut self) {
+        match poll(Duration::from_millis(100)) {
+            Ok(_) => {},
+            Err(_) => return,
+        };
+
+        match read() {
+            Ok(e) => {
+                self.handle_action(event_handler(&e));
+                let action = self.state.lock().unwrap().scene.lock().unwrap().event_handler(&e);
+                self.handle_action(action);
+            },
+            Err(_) => {},
+        };
     }
 
     fn handle_action(&mut self, action: Action) {
