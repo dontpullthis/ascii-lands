@@ -44,6 +44,7 @@ impl Engine {
     
             let mut state = self.state.lock().unwrap();
             state.scene = found_scene.clone();
+            state.scene.lock().unwrap().on_show();
         }
         self.handle_action(Action::Render);
     }

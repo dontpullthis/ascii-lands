@@ -30,6 +30,14 @@ impl MainMenuScene {
 }
 
 impl Scene for MainMenuScene {
+    fn on_show(&self) {
+        execute!(
+            stdout(),
+            SetColors(Colors::new(Color::Green, Color::Black)),
+            Clear(ClearType::All),
+        ).unwrap();
+    }
+
     fn render(&self) {
         let (w, h) = size().unwrap();
         let h_start = ((h - 4) / 2) as u16;
@@ -40,9 +48,6 @@ impl Scene for MainMenuScene {
             .collect();
         execute!(
             stdout(),
-            SetColors(Colors::new(Color::Green, Color::Black)),
-            Clear(ClearType::All),
-
             
             MoveTo(((w as usize - LABEL_NEW_GAME.len()) / 2) as u16, h_start),            
             SetColors(Colors::new(Color::Green, bg_colors[0])),
@@ -55,13 +60,13 @@ impl Scene for MainMenuScene {
             Print(LABEL_QUIT.to_string()),
 
             SetColors(Colors::new(Color::Green, Color::Black)),
+            MoveTo(0, 0),
         ).unwrap();
     }
 
     fn event_handler(&mut self, event: &Event) -> Action {
         match event {
             Event::Key(e) => {
-
                 if e.code == KeyCode::Up && self.active_item > 0 {
                     self.active_item -= 1;
                     return Action::Render;

@@ -16,6 +16,10 @@ struct DummyScene {
 }
 
 impl Scene for DummyScene {
+    fn on_show(&self) {
+
+    }
+
     fn render(&self) {
 
     }
